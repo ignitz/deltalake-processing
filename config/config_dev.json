@@ -1,0 +1,54 @@
+{
+    "tables": [
+        {
+            "primaryKey": "id",
+            "databaseName": "DATAFEEDER_register",
+            "tableName": "dbo_persons",
+            "sourcePath": "s3://333728661073-dev-kafka-raw/kafka/cdc/DATAFEEDER_register.dbo.persons/",
+            "sourceFormat": "parquet",
+            "targetPath": "s3://333728661073-dev-kafka-staged/DATAFEEDER_register/dbo/persons",
+            "partitionBy": "gender"
+        },
+        {
+            "primaryKey": "id",
+            "databaseName": "DATAFEEDER_register",
+            "tableName": "dbo_addresses",
+            "sourcePath": "s3://333728661073-dev-kafka-raw/kafka/cdc/DATAFEEDER_register.dbo.addresses/",
+            "sourceFormat": "parquet",
+            "targetPath": "s3://333728661073-dev-kafka-staged/DATAFEEDER_register/dbo/addresses",
+            "partitionBy": "country"
+        },
+        {
+            "primaryKey": "id",
+            "databaseName": "DATAFEEDER_register",
+            "tableName": "dbo_companies",
+            "sourcePath": "s3://333728661073-dev-kafka-raw/kafka/cdc/DATAFEEDER_register.dbo.companies/",
+            "sourceFormat": "parquet",
+            "targetPath": "s3://333728661073-dev-kafka-staged/DATAFEEDER_register/dbo/companies"
+        },
+        {
+            "primaryKey": "id",
+            "databaseName": "DATAFEEDER_register",
+            "tableName": "dbo_persons_companies",
+            "sourcePath": "s3://333728661073-dev-kafka-raw/kafka/cdc/DATAFEEDER_register.dbo.persons_companies/",
+            "sourceFormat": "parquet",
+            "targetPath": "s3://333728661073-dev-kafka-staged/DATAFEEDER_register/dbo/persons_companies"
+        },
+        {
+            "primaryKey": "id",
+            "databaseName": "DATAFEEDER_tracker",
+            "tableName": "public_posts",
+            "sourcePath": "s3://333728661073-dev-kafka-raw/kafka/cdc/DATAFEEDER_tracker.public.posts/",
+            "sourceFormat": "parquet",
+            "targetPath": "s3://333728661073-dev-kafka-staged/DATAFEEDER_tracker/public/posts"
+        },
+        {
+            "primaryKey": "id",
+            "databaseName": "DATAFEEDER_tracker",
+            "tableName": "public_users",
+            "sourcePath": "s3://333728661073-dev-kafka-raw/kafka/cdc/DATAFEEDER_tracker.public.users/",
+            "sourceFormat": "parquet",
+            "targetPath": "s3://333728661073-dev-kafka-staged/DATAFEEDER_tracker/public/users"
+        }
+    ]
+}
