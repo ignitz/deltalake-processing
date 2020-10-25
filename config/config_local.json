@@ -4,7 +4,7 @@
             "primaryKey": "id",
             "databaseName": "DATAFEEDER_register",
             "tableName": "dbo_persons",
-            "sourcePath": "fs/s3/333728661073-dev-kafka-raw/kafka/cdc/DATAFEEDER_register.dbo.persons/",
+            "sourcePath": "fs/s3/333728661073-dev-kafka-raw/cdc/kafka/DATAFEEDER_register.dbo.persons/",
             "sourceFormat": "parquet",
             "targetPath": "fs/s3/333728661073-dev-kafka-staged/DATAFEEDER_register/dbo/persons",
             "partitionBy": "gender"
@@ -13,7 +13,7 @@
             "primaryKey": "id",
             "databaseName": "DATAFEEDER_register",
             "tableName": "dbo_addresses",
-            "sourcePath": "fs/s3/333728661073-dev-kafka-raw/kafka/cdc/DATAFEEDER_register.dbo.addresses/",
+            "sourcePath": "fs/s3/333728661073-dev-kafka-raw/cdc/kafka/DATAFEEDER_register.dbo.addresses/",
             "sourceFormat": "parquet",
             "targetPath": "fs/s3/333728661073-dev-kafka-staged/DATAFEEDER_register/dbo/addresses",
             "partitionBy": "country"
@@ -22,7 +22,7 @@
             "primaryKey": "id",
             "databaseName": "DATAFEEDER_register",
             "tableName": "dbo_companies",
-            "sourcePath": "fs/s3/333728661073-dev-kafka-raw/kafka/cdc/DATAFEEDER_register.dbo.companies/",
+            "sourcePath": "fs/s3/333728661073-dev-kafka-raw/cdc/kafka/DATAFEEDER_register.dbo.companies/",
             "sourceFormat": "parquet",
             "targetPath": "fs/s3/333728661073-dev-kafka-staged/DATAFEEDER_register/dbo/companies"
         },
@@ -30,7 +30,7 @@
             "primaryKey": "id",
             "databaseName": "DATAFEEDER_register",
             "tableName": "dbo_persons_companies",
-            "sourcePath": "fs/s3/333728661073-dev-kafka-raw/kafka/cdc/DATAFEEDER_register.dbo.persons_companies/",
+            "sourcePath": "fs/s3/333728661073-dev-kafka-raw/cdc/kafka/DATAFEEDER_register.dbo.persons_companies/",
             "sourceFormat": "parquet",
             "targetPath": "fs/s3/333728661073-dev-kafka-staged/DATAFEEDER_register/dbo/persons_companies"
         },
@@ -38,7 +38,7 @@
             "primaryKey": "id",
             "databaseName": "DATAFEEDER_tracker",
             "tableName": "public_posts",
-            "sourcePath": "fs/s3/333728661073-dev-kafka-raw/kafka/cdc/DATAFEEDER_tracker.public.posts/",
+            "sourcePath": "fs/s3/333728661073-dev-kafka-raw/cdc/kafka/DATAFEEDER_tracker.public.posts/",
             "sourceFormat": "parquet",
             "targetPath": "fs/s3/333728661073-dev-kafka-staged/DATAFEEDER_tracker/public/posts"
         },
@@ -46,7 +46,7 @@
             "primaryKey": "id",
             "databaseName": "DATAFEEDER_tracker",
             "tableName": "public_users",
-            "sourcePath": "fs/s3/333728661073-dev-kafka-raw/kafka/cdc/DATAFEEDER_tracker.public.users/",
+            "sourcePath": "fs/s3/333728661073-dev-kafka-raw/cdc/kafka/DATAFEEDER_tracker.public.users/",
             "sourceFormat": "parquet",
             "targetPath": "fs/s3/333728661073-dev-kafka-staged/DATAFEEDER_tracker/public/users"
         }

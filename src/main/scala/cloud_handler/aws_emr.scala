@@ -50,6 +50,7 @@ class AWS_EMR(jsonParams: JsValue) {
     var sourceFormat: String = null
     var targetPath: String = null
     var partitionBy: String = null
+    var processDelete: Boolean = false
 
     for (table <- configParams("tables").as[List[JsValue]]) {
       try {
@@ -63,6 +64,11 @@ class AWS_EMR(jsonParams: JsValue) {
         } catch {
           case e: java.util.NoSuchElementException => partitionBy = null
         }
+        try {
+          processDelete = table("processDelete").as[Boolean]
+        } catch {
+          case e: java.util.NoSuchElementException => processDelete = false
+        }
 
       } catch {
         case e: Throwable => { throw new Exception(e) }
@@ -75,7 +81,8 @@ class AWS_EMR(jsonParams: JsValue) {
         primaryKey = primaryKey,
         sourceFormat = sourceFormat,
         targetPath = targetPath,
-        partitionBy = partitionBy
+        partitionBy = partitionBy,
+        processDelete = processDelete
       )
 
       deltainstance.run()

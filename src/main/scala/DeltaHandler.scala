@@ -9,7 +9,7 @@ import java.util.Base64
 import java.time.format.DateTimeFormatter
 import java.time.{LocalDateTime}
 
-import utils.DataFrameTools._
+import utils.DataFrameTools.deduplicateRows
 
 import io.delta.tables._
 
@@ -19,7 +19,8 @@ class DeltaHandler(
     sourcePath: String,
     sourceFormat: String,
     targetPath: String,
-    partitionBy: String
+    partitionBy: String,
+    processDelete: Boolean
 ) {
   val logger = Logger.getLogger(getClass().getName())
 
@@ -67,96 +68,123 @@ class DeltaHandler(
   }
 
   private def createFullLoadDataset() {
-    val df = spark.read
-      .format(sourceFormat)
-      .load(sourcePath)
-      .drop("year", "month", "day", "hour")
+    try {
+      val df = spark.read
+        .format(sourceFormat)
+        .load(sourcePath)
+        .drop("year", "month", "day", "hour")
 
-    val dfDedupInsert = deduplicateRows(
-      df = df.filter("op in ('r', 'c', 'u')").select("after.*", "ts_ms"),
-      pkCol = primaryKey
-    )
-    val dfDedupDelete = deduplicateRows(
-      df = df.filter("op = 'd'").select("before.*", "ts_ms"),
-      pkCol = primaryKey
-    )
+      val dfDedupInsert = deduplicateRows(
+        df = df.filter("op in ('r', 'c', 'u')").select("after.*", "ts_ms"),
+        pkCol = primaryKey
+      )
+      val dfDedupDelete = deduplicateRows(
+        df = df.filter("op = 'd'").select("before.*", "ts_ms"),
+        pkCol = primaryKey
+      )
 
-    if (partitionBy != null) {
-      dfDedupInsert
-        .drop("ts_ms")
-        .write
-        .partitionBy(partitionBy)
-        .format("delta")
-        .mode("overwrite")
-        .option("overwriteSchema", "true")
-        .save(targetPath)
-    } else {
-      dfDedupInsert
-        .drop("ts_ms")
-        .write
-        .format("delta")
-        .mode("overwrite")
-        .option("overwriteSchema", "true")
-        .save(targetPath)
-    }
+      if (partitionBy != null) {
+        dfDedupInsert
+          .drop("ts_ms")
+          .write
+          .partitionBy(partitionBy)
+          .format("delta")
+          .mode("overwrite")
+          .option("overwriteSchema", "true")
+          .save(targetPath)
+      } else {
+        dfDedupInsert
+          .drop("ts_ms")
+          .write
+          .format("delta")
+          .mode("overwrite")
+          .option("overwriteSchema", "true")
+          .save(targetPath)
+      }
 
-    if (dfDedupDelete.filter("op = 'd'").count > 0) {
-      // delete
+      if (processDelete && dfDedupDelete.filter("op = 'd'").count > 0) {
+        // delete
 
-      DeltaTable
-        .forPath(sparkSession = spark, path = targetPath)
-        .delete(
-          col(primaryKey).isin(dfDedupDelete(primaryKey))
-        )
+        DeltaTable
+          .forPath(sparkSession = spark, path = targetPath)
+          .delete(
+            col(primaryKey).isin(dfDedupDelete(primaryKey))
+          )
+      }
+
+      dfDedupInsert.unpersist()
+      dfDedupDelete.unpersist()
+    } catch {
+      case e: org.apache.spark.sql.AnalysisException => {
+        logger.warn("There is no cdc data to process. Jump to next table.")
+        return
+      }
+      case e: Throwable => {
+        throw e
+      }
     }
 
   }
 
   private def upsertDelete() {
-    val df = spark.read
-      .format(sourceFormat)
-      .load(sourcePath)
-      .drop("year", "month", "day", "hour")
+    try {
+      val df = spark.read
+        .format(sourceFormat)
+        .load(sourcePath)
+        .drop("year", "month", "day", "hour")
 
-    val dfDedupUpsert = deduplicateRows(
-      df = df.filter("op in ('r', 'c', 'u')").select("after.*", "ts_ms"),
-      pkCol = primaryKey
-    )
-    val dfDedupDelete = deduplicateRows(
-      df = df.filter("op = 'd'").select("before.*", "ts_ms"),
-      pkCol = primaryKey
-    )
-
-    val stringExp = if (partitionBy != null) {
-      s"${tableName}.${primaryKey} = updates.${primaryKey} AND ${tableName}.${partitionBy} = updates.${partitionBy}"
-    } else {
-      s"${tableName}.${primaryKey} = updates.${primaryKey}"
-    }
-
-    DeltaTable
-      .forPath(sparkSession = spark, path = targetPath)
-      .as(tableName)
-      .merge(
-        dfDedupUpsert.as("updates"),
-        stringExp
+      val dfDedupUpsert = deduplicateRows(
+        df = df.filter("op in ('r', 'c', 'u')").select("after.*", "ts_ms"),
+        pkCol = primaryKey
       )
-      .whenMatched()
-      .updateAll()
-      .whenNotMatched()
-      .insertAll()
-      .execute()
+      val dfDedupDelete = deduplicateRows(
+        df = df.filter("op = 'd'").select("before.*", "ts_ms"),
+        pkCol = primaryKey
+      )
 
-    if (dfDedupDelete.filter("op = 'd'").count > 0) {
+      val stringExp = if (partitionBy != null) {
+        s"${tableName}.${primaryKey} = updates.${primaryKey} AND ${tableName}.${partitionBy} = updates.${partitionBy}"
+      } else {
+        s"${tableName}.${primaryKey} = updates.${primaryKey}"
+      }
+
       DeltaTable
         .forPath(sparkSession = spark, path = targetPath)
         .as(tableName)
         .merge(
-          dfDedupDelete.as("deletes"),
-          s"${tableName}.${primaryKey} = deletes.${primaryKey}"
+          dfDedupUpsert.as("updates"),
+          stringExp
         )
         .whenMatched()
-        .delete()
+        .updateAll()
+        .whenNotMatched()
+        .insertAll()
         .execute()
+
+      if (processDelete && dfDedupDelete.filter("op = 'd'").count > 0) {
+        DeltaTable
+          .forPath(sparkSession = spark, path = targetPath)
+          .as(tableName)
+          .merge(
+            dfDedupDelete.as("deletes"),
+            s"${tableName}.${primaryKey} = deletes.${primaryKey}"
+          )
+          .whenMatched()
+          .delete()
+          .execute()
+      }
+
+      dfDedupUpsert.unpersist()
+      dfDedupDelete.unpersist()
+      df.unpersist()
+    } catch {
+      case e: org.apache.spark.sql.AnalysisException => {
+        logger.warn("There is no cdc data to process. Jump to next table.")
+        return
+      }
+      case e: Throwable => {
+        throw e
+      }
     }
 
   }
